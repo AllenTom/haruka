@@ -2,7 +2,7 @@ package Haruka
 
 import (
 	"crypto/tls"
-	"encoding/json"
+	"encoding/xml"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
@@ -33,16 +33,35 @@ func TestRunAndListen(t *testing.T) {
 		data := map[string]interface{}{
 			"say": "pong",
 		}
-		rawData, err := json.Marshal(data)
+		err := context.JSON(data)
 		if err != nil {
-			panic(err)
+			t.Error(e)
 		}
-		context.Writer.Header().Set("Content-Type", "application/json")
-		context.Writer.Write(rawData)
 	})
 	go func() {
 		e.RunAndListen(":8090")
 	}()
 	<-time.After(3 * time.Second)
 	testRequest(t, "http://localhost:8090/ping", "{\"say\":\"pong\"}")
+}
+
+type XMLBody struct {
+	XMLName xml.Name `xml:"test"`
+	Say     string   `xml:"say"`
+}
+
+func TestXML(t *testing.T) {
+	e := NewEngine()
+	e.Router.AddHandler("/ping", func(context *Context) {
+
+		err := context.XML(XMLBody{Say: "Hello"})
+		if err != nil {
+			t.Error(e)
+		}
+	})
+	go func() {
+		e.RunAndListen(":8090")
+	}()
+	<-time.After(3 * time.Second)
+	testRequest(t, "http://localhost:8090/ping", "<test><say>Hello</say></test>")
 }
