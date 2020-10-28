@@ -24,3 +24,21 @@ func TestJSONParser_Parse(t *testing.T) {
 	}
 	assert.Equal(t, "hello", body.Say)
 }
+
+type TestXMLBody struct {
+	Say string `xml:"say"`
+}
+
+func TestXMLParser_Parse(t *testing.T) {
+	testRequest, _ := http.NewRequest("POST", "/", bytes.NewBufferString("<test><say>hello</say></test>"))
+	context := Context{
+		Writer:  nil,
+		Request: testRequest,
+	}
+	body := &TestXMLBody{}
+	err := context.ParseXML(body)
+	if err != nil {
+		assert.Error(t, err)
+	}
+	assert.Equal(t, "hello", body.Say)
+}
