@@ -1,4 +1,4 @@
-package Haruka
+package haruka
 
 import (
 	"crypto/tls"
@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
-	"time"
 )
 
 func testRequest(t *testing.T, url string, expected string) {
@@ -41,7 +40,6 @@ func TestRunAndListen(t *testing.T) {
 	go func() {
 		e.RunAndListen(":8090")
 	}()
-	<-time.After(3 * time.Second)
 	testRequest(t, "http://localhost:8090/ping", "{\"say\":\"pong\"}")
 }
 
@@ -53,7 +51,6 @@ type XMLBody struct {
 func TestXML(t *testing.T) {
 	e := NewEngine()
 	e.Router.AddHandler("/ping", func(context *Context) {
-
 		err := context.XML(XMLBody{Say: "Hello"})
 		if err != nil {
 			t.Error(e)
@@ -62,6 +59,5 @@ func TestXML(t *testing.T) {
 	go func() {
 		e.RunAndListen(":8090")
 	}()
-	<-time.After(3 * time.Second)
 	testRequest(t, "http://localhost:8090/ping", "<test><say>Hello</say></test>")
 }

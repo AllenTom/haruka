@@ -1,4 +1,4 @@
-package Haruka
+package haruka
 
 import (
 	"encoding/json"

@@ -1,29 +1,41 @@
-package Haruka
+package haruka
 
 import (
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 )
 
 type Engine struct {
 	Router *Router
+	server *http.Server
 }
 
 func NewEngine() *Engine {
 	return &Engine{
-		Router: &Router{
-			Handlers: []*RouterMapping{},
-		},
+		Router: NewRouter(),
 	}
 }
 func (e *Engine) RunAndListen(addr string) {
 	for _, handler := range e.Router.Handlers {
-		http.HandleFunc(handler.Pattern, func(writer http.ResponseWriter, request *http.Request) {
+		e.Router.HandlerRouter.HandleFunc(handler.Pattern, func(writer http.ResponseWriter, request *http.Request) {
 			handler.HandlerFunc(&Context{
-				Writer:  writer,
-				Request: request,
+				Writer:     writer,
+				Request:    request,
+				Parameters: mux.Vars(request),
 			})
 		})
 	}
-	log.Fatal(http.ListenAndServe(addr, nil))
+	mx := http.NewServeMux()
+	mx.Handle("/", e.Router.HandlerRouter)
+	server := &http.Server{
+		Addr:    addr,
+		Handler: mx,
+	}
+	e.server = server
+	log.Fatal(server.ListenAndServe())
+}
+
+func (e *Engine) Close() {
+	e.server.Close()
 }
