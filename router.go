@@ -31,3 +31,53 @@ func (r *Router) AddHandler(pattern string, handler RequestHandler) {
 		})
 	})
 }
+
+func (r *Router) GET(pattern string, handler RequestHandler) {
+	r.HandlerRouter.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
+		handler(&Context{
+			Writer:     writer,
+			Request:    request,
+			Parameters: mux.Vars(request),
+		})
+	}).Methods("GET")
+}
+
+func (r *Router) POST(pattern string, handler RequestHandler) {
+	r.HandlerRouter.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
+		handler(&Context{
+			Writer:     writer,
+			Request:    request,
+			Parameters: mux.Vars(request),
+		})
+	}).Methods("POST")
+}
+
+func (r *Router) PUT(pattern string, handler RequestHandler) {
+	r.HandlerRouter.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
+		handler(&Context{
+			Writer:     writer,
+			Request:    request,
+			Parameters: mux.Vars(request),
+		})
+	}).Methods("PUT")
+}
+
+func (r *Router) PATCH(pattern string, handler RequestHandler) {
+	r.HandlerRouter.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
+		handler(&Context{
+			Writer:     writer,
+			Request:    request,
+			Parameters: mux.Vars(request),
+		})
+	}).Methods("PATCH")
+}
+
+func (r *Router) DELETE(pattern string, handler RequestHandler) {
+	r.HandlerRouter.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
+		handler(&Context{
+			Writer:     writer,
+			Request:    request,
+			Parameters: mux.Vars(request),
+		})
+	}).Methods("DELETE")
+}
