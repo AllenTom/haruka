@@ -81,3 +81,7 @@ func (r *Router) DELETE(pattern string, handler RequestHandler) {
 		})
 	}).Methods("DELETE")
 }
+
+func (r *Router) Static(pattern string, staticPath string) {
+	r.HandlerRouter.PathPrefix(pattern).Handler(http.StripPrefix(pattern, http.FileServer(http.Dir(staticPath))))
+}
