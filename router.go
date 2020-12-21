@@ -13,22 +13,27 @@ type RouterMapping struct {
 type Router struct {
 	Handlers      []RouterMapping
 	HandlerRouter *mux.Router
+	Middleware    []Middleware
 }
 
 func NewRouter() *Router {
+	muxRouter := mux.NewRouter()
 	return &Router{
-		HandlerRouter: mux.NewRouter(),
+		HandlerRouter: muxRouter,
 		Handlers:      []RouterMapping{},
 	}
 }
-
 func (r *Router) AddHandler(pattern string, handler RequestHandler) {
 	r.HandlerRouter.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
-		handler(&Context{
+		ctx := &Context{
 			Writer:     writer,
 			Request:    request,
 			Parameters: mux.Vars(request),
-		})
+		}
+		for _, middleware := range r.Middleware {
+			middleware.OnRequest(ctx)
+		}
+		handler(ctx)
 	})
 }
 
