@@ -90,3 +90,13 @@ func (r *Router) DELETE(pattern string, handler RequestHandler) {
 func (r *Router) Static(pattern string, staticPath string) {
 	r.HandlerRouter.PathPrefix(pattern).Handler(http.StripPrefix(pattern, http.FileServer(http.Dir(staticPath))))
 }
+
+func (r *Router) METHODS(pattern string, methods []string, handler RequestHandler) {
+	r.HandlerRouter.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
+		handler(&Context{
+			Writer:     writer,
+			Request:    request,
+			Parameters: mux.Vars(request),
+		})
+	}).Methods(methods...)
+}
