@@ -23,3 +23,12 @@ func (p *PaginationMiddleware) OnRequest(ctx *haruka.Context) {
 	ctx.Param["page"] = page
 	ctx.Param["pageSize"] = pageSize
 }
+
+func NewPaginationMiddleware(pageLookUp string, pageSizeLookUp string, defaultPage int, defaultPageSize int) *PaginationMiddleware {
+	return &PaginationMiddleware{
+		pageSizeLookUp:  pageSizeLookUp,
+		pageLookUp:      pageLookUp,
+		defaultPage:     defaultPage,
+		defaultPageSize: defaultPageSize,
+	}
+}
