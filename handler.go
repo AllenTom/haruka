@@ -9,6 +9,7 @@ type Context struct {
 	Writer     http.ResponseWriter
 	Request    *http.Request
 	Parameters map[string]string
+	Param      map[string]interface{}
 }
 type RequestHandler func(context *Context)
 
