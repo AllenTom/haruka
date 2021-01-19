@@ -87,3 +87,6 @@ func (c *Context) HTML(templatePath string, data interface{}) (err error) {
 	view.Write(c)
 	return nil
 }
+
+type JSON map[string]interface{}
+type XML map[string]interface{}
