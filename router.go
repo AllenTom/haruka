@@ -34,40 +34,40 @@ func (r *Router) AddHandler(pattern string, handler RequestHandler) {
 func (r *Router) GET(pattern string, handler RequestHandler) {
 	r.HandlerRouter.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
 		ctx := createContext(writer, request)
-		handler(ctx)
 		r.execMiddleware(ctx)
+		handler(ctx)
 	}).Methods("GET")
 }
 
 func (r *Router) POST(pattern string, handler RequestHandler) {
 	r.HandlerRouter.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
 		ctx := createContext(writer, request)
-		handler(ctx)
 		r.execMiddleware(ctx)
+		handler(ctx)
 	}).Methods("POST")
 }
 
 func (r *Router) PUT(pattern string, handler RequestHandler) {
 	r.HandlerRouter.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
 		ctx := createContext(writer, request)
-		handler(ctx)
 		r.execMiddleware(ctx)
+		handler(ctx)
 	}).Methods("PUT")
 }
 
 func (r *Router) PATCH(pattern string, handler RequestHandler) {
 	r.HandlerRouter.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
 		ctx := createContext(writer, request)
-		handler(ctx)
 		r.execMiddleware(ctx)
+		handler(ctx)
 	}).Methods("PATCH")
 }
 
 func (r *Router) DELETE(pattern string, handler RequestHandler) {
 	r.HandlerRouter.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
 		ctx := createContext(writer, request)
-		handler(ctx)
 		r.execMiddleware(ctx)
+		handler(ctx)
 	}).Methods("DELETE")
 }
 
@@ -78,8 +78,8 @@ func (r *Router) Static(pattern string, staticPath string) {
 func (r *Router) METHODS(pattern string, methods []string, handler RequestHandler) {
 	r.HandlerRouter.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
 		ctx := createContext(writer, request)
-		handler(ctx)
 		r.execMiddleware(ctx)
+		handler(ctx)
 	}).Methods(methods...)
 }
 
