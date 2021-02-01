@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"html/template"
 	"io"
+	"os/user"
 )
 
 type View interface {
@@ -17,7 +18,8 @@ type JsonView struct {
 }
 
 func (v *JsonView) Render(data interface{}) (err error) {
-	v.Data, err = json.Marshal(data)
+	user.
+		v.Data, err = json.Marshal(data)
 	return err
 }
 

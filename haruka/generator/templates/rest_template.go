@@ -1,4 +1,6 @@
-package application
+package templates
+
+var RestTemplate = `package application
 
 import "github.com/allentom/haruka"
 
@@ -36,3 +38,4 @@ var Update{{ .modelName }}Handler haruka.RequestHandler = func(context *haruka.C
 		// error handling
 	}
 }
+`
