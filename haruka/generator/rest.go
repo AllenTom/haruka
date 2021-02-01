@@ -20,7 +20,7 @@ func GenerateRestModel(modelName string) error {
 	data["modelName"] = captionName
 	abs, _ := filepath.Abs(".")
 	fmt.Println(fmt.Sprintf("abs = %s", abs))
-	tmp := template.Must(template.ParseFiles("./cmd/generator/templates/rest.tmpl"))
+	tmp := template.Must(template.ParseFiles("./haruka/generator/templates/rest.tmpl"))
 	err = tmp.Execute(file, data)
 	if err != nil {
 		panic(err)

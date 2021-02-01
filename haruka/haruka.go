@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/allentom/haruka/cmd/generator"
+	"github.com/allentom/haruka/haruka/generator"
 	"log"
 
 	"github.com/spf13/cobra"
