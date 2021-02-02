@@ -1,7 +1,6 @@
 package generator
 
 import (
-	"fmt"
 	"github.com/allentom/haruka/haruka/generator/templates"
 	"os"
 	"path/filepath"
@@ -14,8 +13,6 @@ type newProjectOption struct {
 
 func NewProject(option newProjectOption) error {
 	packageName := strings.ToLower(option.Name)
-	abs, _ := filepath.Abs(".")
-	fmt.Println(abs)
 	err := NewGoTemplate("./main.go").
 		LoadTemplate(templates.MainTemplate).
 		AddVar("packageName", packageName).
@@ -44,6 +41,19 @@ func NewProject(option newProjectOption) error {
 	}
 	err = NewGoTemplate(filepath.Join(applicationPath, "router.go")).
 		LoadTemplate(templates.RouterTemplate).
+		GenerateCode()
+	if err != nil {
+		return err
+	}
+
+	// make database
+	databasePath := "./database"
+	err = os.MkdirAll(databasePath, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	err = NewGoTemplate(filepath.Join(databasePath, "connection.go")).
+		LoadTemplate(templates.SQLiteDatabaseConnectionTemplate).
 		GenerateCode()
 	if err != nil {
 		return err

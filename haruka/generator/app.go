@@ -34,4 +34,5 @@ func init() {
 	GeneratorCmd.Flags().StringVarP(&ModelName, "name", "n", "", "model name")
 	GeneratorCmd.Flags().StringVarP(&ModelType, "type", "t", "", "model type")
 	GeneratorCmd.Flags().StringVarP(&PkgName, "pkg", "p", "", "package name")
+	GeneratorCmd.Flags().StringVarP(&PkgName, "db", "d", "sqlite", "package name")
 }

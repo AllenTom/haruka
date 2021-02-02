@@ -1,6 +1,6 @@
 package templates
 
-var InstanceTemplate = `
+var InstanceTemplate = `package application
 import (
 	"github.com/allentom/haruka"
 	"github.com/allentom/haruka/middleware"

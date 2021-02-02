@@ -1,7 +1,6 @@
 package templates
 
-var RouterTemplate = `
-package application
+var RouterTemplate = `package application
 
 import "github.com/allentom/haruka"
 

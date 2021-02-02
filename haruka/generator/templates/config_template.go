@@ -1,7 +1,6 @@
 package templates
 
-var ConfigTemplate = `
-package application
+var ConfigTemplate = `package application
 
 import "github.com/spf13/viper"
 
