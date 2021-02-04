@@ -45,7 +45,12 @@ func NewProject(option newProjectOption) error {
 	if err != nil {
 		return err
 	}
-
+	err = NewGoTemplate("config.yml").
+		LoadTemplate(templates.ConfigFileTemplate).
+		GenerateCode()
+	if err != nil {
+		return err
+	}
 	// make database
 	databasePath := "./database"
 	err = os.MkdirAll(databasePath, os.ModePerm)

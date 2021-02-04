@@ -14,7 +14,6 @@ type Config struct {
 func ReadConfig() error {
 	configer := viper.New()
 	configer.AddConfigPath("./")
-	configer.AddConfigPath("../")
 	configer.SetConfigType("yaml")
 	configer.SetConfigName("config")
 	err := configer.ReadInConfig()
@@ -28,4 +27,7 @@ func ReadConfig() error {
 	}
 	return nil
 }
+`
+
+var ConfigFileTemplate = `addr: 7600
 `
