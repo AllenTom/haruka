@@ -49,8 +49,9 @@ type NewJWTMiddlewareOption struct {
 	JWTKey          []byte
 }
 
-func NewJWTMiddleware(option *NewJWTMiddlewareOption) *RequestLoggerMiddleware {
-	return &RequestLoggerMiddleware{
+func NewJWTMiddleware(option *NewJWTMiddlewareOption) *JWTMiddleware {
+	return &JWTMiddleware{
 		Logger: logrus.New(),
+		Option: option,
 	}
 }
