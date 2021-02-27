@@ -6,10 +6,12 @@ import (
 )
 
 type Context struct {
-	Writer     http.ResponseWriter
-	Request    *http.Request
-	Parameters map[string]string
-	Param      map[string]interface{}
+	Writer      http.ResponseWriter
+	Request     *http.Request
+	Parameters  map[string]string
+	Param       map[string]interface{}
+	isAbort     bool
+	isInterrupt bool
 }
 type RequestHandler func(context *Context)
 
@@ -46,4 +48,14 @@ func (c *Context) GetPathParameterAsInt(key string) (int, error) {
 		return 0, err
 	}
 	return value, nil
+}
+
+// interrupt middleware chain
+func (c *Context) Abort() {
+	c.isAbort = true
+}
+
+// interrupt middleware chain
+func (c *Context) Interrupt() {
+	c.isInterrupt = true
 }

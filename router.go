@@ -27,6 +27,9 @@ func (r *Router) AddHandler(pattern string, handler RequestHandler) {
 	r.HandlerRouter.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
 		ctx := createContext(writer, request)
 		r.execMiddleware(ctx)
+		if ctx.isInterrupt {
+			return
+		}
 		handler(ctx)
 	})
 }
@@ -35,6 +38,9 @@ func (r *Router) GET(pattern string, handler RequestHandler) {
 	r.HandlerRouter.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
 		ctx := createContext(writer, request)
 		r.execMiddleware(ctx)
+		if ctx.isInterrupt {
+			return
+		}
 		handler(ctx)
 	}).Methods("GET")
 }
@@ -43,6 +49,9 @@ func (r *Router) POST(pattern string, handler RequestHandler) {
 	r.HandlerRouter.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
 		ctx := createContext(writer, request)
 		r.execMiddleware(ctx)
+		if ctx.isInterrupt {
+			return
+		}
 		handler(ctx)
 	}).Methods("POST")
 }
@@ -51,6 +60,9 @@ func (r *Router) PUT(pattern string, handler RequestHandler) {
 	r.HandlerRouter.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
 		ctx := createContext(writer, request)
 		r.execMiddleware(ctx)
+		if ctx.isInterrupt {
+			return
+		}
 		handler(ctx)
 	}).Methods("PUT")
 }
@@ -59,6 +71,9 @@ func (r *Router) PATCH(pattern string, handler RequestHandler) {
 	r.HandlerRouter.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
 		ctx := createContext(writer, request)
 		r.execMiddleware(ctx)
+		if ctx.isInterrupt {
+			return
+		}
 		handler(ctx)
 	}).Methods("PATCH")
 }
@@ -67,6 +82,9 @@ func (r *Router) DELETE(pattern string, handler RequestHandler) {
 	r.HandlerRouter.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
 		ctx := createContext(writer, request)
 		r.execMiddleware(ctx)
+		if ctx.isInterrupt {
+			return
+		}
 		handler(ctx)
 	}).Methods("DELETE")
 }
@@ -79,6 +97,9 @@ func (r *Router) METHODS(pattern string, methods []string, handler RequestHandle
 	r.HandlerRouter.HandleFunc(pattern, func(writer http.ResponseWriter, request *http.Request) {
 		ctx := createContext(writer, request)
 		r.execMiddleware(ctx)
+		if ctx.isInterrupt {
+			return
+		}
 		handler(ctx)
 	}).Methods(methods...)
 }
@@ -89,11 +110,15 @@ func createContext(writer http.ResponseWriter, request *http.Request) *Context {
 		Request:    request,
 		Parameters: mux.Vars(request),
 		Param:      map[string]interface{}{},
+		isAbort:    false,
 	}
 }
 
 func (r *Router) execMiddleware(ctx *Context) {
 	for _, middleware := range r.Middleware {
 		middleware.OnRequest(ctx)
+		if ctx.isAbort {
+			return
+		}
 	}
 }
