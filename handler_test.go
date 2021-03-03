@@ -98,3 +98,67 @@ func TestContext_GetQueryStrings(t *testing.T) {
 	}()
 	testRequest(t, "http://localhost:8090/ping?key=123&key=1234&key2=123", "<test><say>Hello</say></test>")
 }
+
+type Input struct {
+	UintId                    uint          `hsource:"query" hname:"id"`
+	Int64Id                   int64         `hsource:"query" hname:"id"`
+	Name                      string        `hsource:"query" hname:"name"`
+	Token                     string        `hsource:"path" hname:"token"`
+	NumberItems               []int64       `hsource:"query" hname:"nitems"`
+	NumberItemsArray          [5]int64      `hsource:"query" hname:"nitems"`
+	NumberStringItemsArray    []string      `hsource:"query" hname:"nitems"`
+	NumberInterfaceItemsArray []interface{} `hsource:"query" hname:"nitems"`
+	Again                     struct {
+		UintId                    uint          `hsource:"query" hname:"id"`
+		Int64Id                   int64         `hsource:"query" hname:"id"`
+		Name                      string        `hsource:"query" hname:"name"`
+		Token                     string        `hsource:"path" hname:"token"`
+		NumberItems               []int64       `hsource:"query" hname:"nitems"`
+		NumberItemsArray          [5]int64      `hsource:"query" hname:"nitems"`
+		NumberStringItemsArray    []string      `hsource:"query" hname:"nitems"`
+		NumberInterfaceItemsArray []interface{} `hsource:"query" hname:"nitems"`
+		AAgain                    struct {
+			UintId                    uint          `hsource:"query" hname:"id"`
+			Int64Id                   int64         `hsource:"query" hname:"id"`
+			Name                      string        `hsource:"query" hname:"name"`
+			Token                     string        `hsource:"path" hname:"token"`
+			NumberItems               []int64       `hsource:"query" hname:"nitems"`
+			NumberItemsArray          [5]int64      `hsource:"query" hname:"nitems"`
+			NumberStringItemsArray    []string      `hsource:"query" hname:"nitems"`
+			NumberInterfaceItemsArray []interface{} `hsource:"query" hname:"nitems"`
+		}
+	}
+}
+
+func TestConvert(t *testing.T) {
+	url, _ := url.Parse("http://localhost:8090/ping?id=1&id=20&name=aren&nitems=1&&nitems=2&&nitems=3")
+	req := &http.Request{URL: url}
+	ctx := &Context{
+		Request: req,
+		Param:   map[string]interface{}{},
+		Parameters: map[string]string{
+			"token": "path_token",
+		},
+	}
+	input := &Input{}
+	err := ctx.BindingInput(input)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	assert.Equal(t, int64(1), input.Int64Id)
+	assert.Equal(t, uint(1), input.UintId)
+	assert.Equal(t, "aren", input.Name)
+	assert.Equal(t, "path_token", input.Token)
+	for idx, num := range input.NumberItems {
+		assert.Equal(t, int64(idx+1), num)
+	}
+
+	assert.Equal(t, int64(1), input.Again.Int64Id)
+	assert.Equal(t, uint(1), input.Again.UintId)
+	assert.Equal(t, "aren", input.Again.Name)
+	assert.Equal(t, "path_token", input.Again.Token)
+	for idx, num := range input.Again.NumberItems {
+		assert.Equal(t, int64(idx+1), num)
+	}
+}
