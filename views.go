@@ -25,7 +25,11 @@ func (v *JsonView) Write(context *Context) {
 	context.Writer.Header().Set("Content-Type", "application/json")
 	context.Writer.Write(v.Data)
 }
-
+func (v *JsonView) WriteWithStatus(context *Context, status int) {
+	context.Writer.Header().Set("Content-Type", "application/json")
+	context.Writer.WriteHeader(status)
+	context.Writer.Write(v.Data)
+}
 func (c *Context) JSON(data interface{}) (err error) {
 	view := JsonView{}
 	err = view.Render(data)
@@ -33,6 +37,16 @@ func (c *Context) JSON(data interface{}) (err error) {
 		return
 	}
 	view.Write(c)
+	return nil
+}
+
+func (c *Context) JSONWithStatus(data interface{}, status int) (err error) {
+	view := JsonView{}
+	err = view.Render(data)
+	if err != nil {
+		return
+	}
+	view.WriteWithStatus(c, status)
 	return nil
 }
 
@@ -49,7 +63,11 @@ func (v *XMLView) Write(context *Context) {
 	context.Writer.Header().Set("Content-Type", "text/xml")
 	context.Writer.Write(v.Data)
 }
-
+func (v *XMLView) WriteWithStatus(context *Context, status int) {
+	context.Writer.Header().Set("Content-Type", "text/xml")
+	context.Writer.WriteHeader(status)
+	context.Writer.Write(v.Data)
+}
 func (c *Context) XML(data interface{}) (err error) {
 	view := XMLView{}
 	err = view.Render(data)
@@ -57,6 +75,16 @@ func (c *Context) XML(data interface{}) (err error) {
 		return
 	}
 	view.Write(c)
+	return nil
+}
+
+func (c *Context) XMLWithStatus(data interface{}, status int) (err error) {
+	view := XMLView{}
+	err = view.Render(data)
+	if err != nil {
+		return
+	}
+	view.WriteWithStatus(c, status)
 	return nil
 }
 
