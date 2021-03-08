@@ -88,7 +88,7 @@ type ListView struct {
 	GetSerializerContext func(v *ListView, result interface{}) map[string]interface{}
 	GetTemplate          func() serializer.TemplateSerializer
 	GetContainer         func() serializer.ListContainerSerializer
-	OnApplyQuery         func()
+	OnApplyQuery         func(v *ListView)
 	OnError              func(err error)
 }
 
@@ -105,7 +105,7 @@ func (v *ListView) Run() {
 		FilterByParam(v.Context, filter.Lookup, v.QueryBuilder, filter.Method, filter.Many)
 	}
 	if v.OnApplyQuery != nil {
-		v.OnApplyQuery()
+		v.OnApplyQuery(v)
 	}
 	modelsReader := (v.QueryBuilder).(gormh.ModelsReader)
 	count, modelList, err := modelsReader.ReadModels()
