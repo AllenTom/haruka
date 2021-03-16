@@ -135,6 +135,7 @@ type DeleteModelView struct {
 	OnError         func(err error)
 	Model           gormh.DataModel
 	GetResponseBody func() interface{}
+	GetValidators   func(v *DeleteModelView) []validator.Validator
 }
 
 func (v *DeleteModelView) Run() {
@@ -143,6 +144,13 @@ func (v *DeleteModelView) Run() {
 	if err != nil {
 		v.OnError(err)
 		return
+	}
+	if v.GetValidators != nil {
+		err = validator.RunValidators(v.GetValidators(v)...)
+		if err != nil {
+			v.OnError(err)
+			return
+		}
 	}
 	err = v.Model.DeleteById(uint(id))
 	if err != nil {
@@ -162,11 +170,12 @@ func (v *DeleteModelView) Run() {
 }
 
 type UpdateModelView struct {
-	Context  *haruka.Context
-	Lookup   string
-	OnError  func(err error)
-	Model    gormh.DataModel
-	Template serializer.TemplateSerializer
+	Context       *haruka.Context
+	Lookup        string
+	OnError       func(err error)
+	Model         gormh.DataModel
+	Template      serializer.TemplateSerializer
+	GetValidators func(v *UpdateModelView) []validator.Validator
 }
 
 func (v *UpdateModelView) Run() {
@@ -181,6 +190,13 @@ func (v *UpdateModelView) Run() {
 	if err != nil {
 		v.OnError(err)
 		return
+	}
+	if v.GetValidators != nil {
+		err = validator.RunValidators(v.GetValidators(v)...)
+		if err != nil {
+			v.OnError(err)
+			return
+		}
 	}
 	model, err := v.Model.UpdateById(uint(id), requestBody)
 	if err != nil {
