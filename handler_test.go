@@ -1,6 +1,7 @@
 package haruka
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/url"
@@ -128,6 +129,9 @@ type Input struct {
 			NumberInterfaceItemsArray []interface{} `hsource:"query" hname:"nitems"`
 		}
 	}
+	Param      string   `hsource:"param" hname:"name"`
+	ParamInt   int64    `hsource:"param" hname:"id"`
+	ParamSlice []string `hsource:"param" hname:"slice"`
 }
 
 func TestConvert(t *testing.T) {
@@ -135,7 +139,11 @@ func TestConvert(t *testing.T) {
 	req := &http.Request{URL: url}
 	ctx := &Context{
 		Request: req,
-		Param:   map[string]interface{}{},
+		Param: map[string]interface{}{
+			"name":  "name",
+			"id":    int64(1),
+			"slice": []string{"1", "2", "3"},
+		},
 		Parameters: map[string]string{
 			"token": "path_token",
 		},
@@ -160,5 +168,11 @@ func TestConvert(t *testing.T) {
 	assert.Equal(t, "path_token", input.Again.Token)
 	for idx, num := range input.Again.NumberItems {
 		assert.Equal(t, int64(idx+1), num)
+	}
+
+	assert.Equal(t, "name", input.Param)
+	assert.Equal(t, int64(1), input.ParamInt)
+	for idx, num := range input.ParamSlice {
+		assert.Equal(t, fmt.Sprintf("%d", idx+1), num)
 	}
 }

@@ -138,7 +138,9 @@ func bindingWalk(c *Context, v reflect.Value) error {
 					return err
 				}
 			}
-
+		case "param":
+			rawData := c.Param[sourceName]
+			valueField.Set(reflect.ValueOf(rawData))
 		}
 	}
 	return nil
