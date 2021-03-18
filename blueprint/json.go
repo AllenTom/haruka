@@ -176,6 +176,7 @@ type UpdateModelView struct {
 	Model         gormh.DataModel
 	Template      serializer.TemplateSerializer
 	GetValidators func(v *UpdateModelView) []validator.Validator
+	RequestBody   map[string]interface{}
 }
 
 func (v *UpdateModelView) Run() {
@@ -191,6 +192,7 @@ func (v *UpdateModelView) Run() {
 		v.OnError(err)
 		return
 	}
+	v.RequestBody = requestBody
 	if v.GetValidators != nil {
 		err = validator.RunValidators(v.GetValidators(v)...)
 		if err != nil {
