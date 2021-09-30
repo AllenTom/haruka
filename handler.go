@@ -2,10 +2,22 @@ package haruka
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"reflect"
 	"strconv"
+	"time"
 )
+
+var (
+	timeTypeKind      reflect.Kind
+	defaultTimeFormat = "2006-01-02 15:04:05"
+)
+
+func init() {
+	timeType := time.Now()
+	timeTypeKind = reflect.TypeOf(&timeType).Kind()
+}
 
 type Context struct {
 	Writer      http.ResponseWriter
@@ -61,7 +73,9 @@ func (c *Context) Abort() {
 func (c *Context) Interrupt() {
 	c.isInterrupt = true
 }
+func setTimeValue(value reflect.Value, rawValue string, format string) {
 
+}
 func setValue(value reflect.Value, rawValue string) error {
 	switch value.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -101,7 +115,6 @@ func bindingWalk(c *Context, v reflect.Value) error {
 		tags := field.Tag
 		source := tags.Get("hsource")
 		sourceName := tags.Get("hname")
-
 		switch source {
 		case "query":
 			if valueField.Kind() == reflect.Slice || valueField.Kind() == reflect.Array {
@@ -119,6 +132,22 @@ func bindingWalk(c *Context, v reflect.Value) error {
 						return err
 					}
 				}
+			} else if valueField.Kind() == timeTypeKind {
+
+				timeFormat := tags.Get("format")
+				if len(timeFormat) == 0 {
+					timeFormat = defaultTimeFormat
+				}
+				rawValue := c.GetQueryString(sourceName)
+				if len(rawValue) == 0 {
+					continue
+				}
+				timeValue, err := time.Parse(timeFormat, rawValue)
+				if err != nil {
+					return err
+				}
+				valueField.Set(reflect.ValueOf(&timeValue))
+				fmt.Println("time")
 			} else {
 				// not iteration
 				rawValue := c.GetQueryString(sourceName)

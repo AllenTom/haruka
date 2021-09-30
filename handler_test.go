@@ -129,13 +129,14 @@ type Input struct {
 			NumberInterfaceItemsArray []interface{} `hsource:"query" hname:"nitems"`
 		}
 	}
-	Param      string   `hsource:"param" hname:"name"`
-	ParamInt   int64    `hsource:"param" hname:"id"`
-	ParamSlice []string `hsource:"param" hname:"slice"`
+	Param      string     `hsource:"param" hname:"name"`
+	ParamInt   int64      `hsource:"param" hname:"id"`
+	ParamSlice []string   `hsource:"param" hname:"slice"`
+	StartTime  *time.Time `hsource:"query" hname:"startTime" format:"2006-01-02"`
 }
 
 func TestConvert(t *testing.T) {
-	url, _ := url.Parse("http://localhost:8090/ping?id=1&id=20&name=aren&nitems=1&&nitems=2&&nitems=3")
+	url, _ := url.Parse("http://localhost:8090/ping?id=1&id=20&name=aren&nitems=1&&nitems=2&&nitems=3&startTime=2021-01-01")
 	req := &http.Request{URL: url}
 	ctx := &Context{
 		Request: req,
