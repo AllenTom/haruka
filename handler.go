@@ -3,6 +3,7 @@ package haruka
 import (
 	"errors"
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -73,9 +74,12 @@ func (c *Context) Abort() {
 func (c *Context) Interrupt() {
 	c.isInterrupt = true
 }
-func setTimeValue(value reflect.Value, rawValue string, format string) {
 
+type FormFile struct {
+	Header *multipart.FileHeader
+	File   multipart.File
 }
+
 func setValue(value reflect.Value, rawValue string) error {
 	switch value.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -99,6 +103,48 @@ func setValue(value reflect.Value, rawValue string) error {
 	}
 	return nil
 }
+func BindingValue(valueField reflect.Value, rawValue []string, tags reflect.StructTag) error {
+	var err error
+	if valueField.Kind() == reflect.Slice || valueField.Kind() == reflect.Array {
+		if valueField.Kind() == reflect.Array && valueField.Cap() < len(rawValue) {
+			return errors.New("array cap insufficient")
+		}
+		if valueField.Kind() == reflect.Slice {
+			valueField.Set(reflect.MakeSlice(valueField.Type(), len(rawValue), len(rawValue)))
+		}
+		for idx, s := range rawValue {
+			element := valueField.Index(idx)
+			err = setValue(element, s)
+			if err != nil {
+				return err
+			}
+		}
+	} else if valueField.Kind() == timeTypeKind {
+		timeFormat := tags.Get("format")
+		if len(timeFormat) == 0 {
+			timeFormat = defaultTimeFormat
+		}
+		if len(rawValue[0]) == 0 {
+			return nil
+		}
+		timeValue, err := time.Parse(timeFormat, rawValue[0])
+		if err != nil {
+			return err
+		}
+		valueField.Set(reflect.ValueOf(&timeValue))
+		fmt.Println("time")
+	} else {
+		// not iteration
+		err = setValue(valueField, rawValue[0])
+		if err != nil {
+			return err
+		}
+	}
+	if err != nil {
+		return err
+	}
+	return nil
+}
 func bindingWalk(c *Context, v reflect.Value) error {
 	var err error
 	for i := 0; i < v.NumField(); i++ {
@@ -117,46 +163,10 @@ func bindingWalk(c *Context, v reflect.Value) error {
 		sourceName := tags.Get("hname")
 		switch source {
 		case "query":
-			if valueField.Kind() == reflect.Slice || valueField.Kind() == reflect.Array {
-				rawValue := c.GetQueryStrings(sourceName)
-				if valueField.Kind() == reflect.Array && valueField.Cap() < len(rawValue) {
-					return errors.New("array cap insufficient")
-				}
-				if valueField.Kind() == reflect.Slice {
-					valueField.Set(reflect.MakeSlice(valueField.Type(), len(rawValue), len(rawValue)))
-				}
-				for idx, s := range rawValue {
-					element := valueField.Index(idx)
-					err = setValue(element, s)
-					if err != nil {
-						return err
-					}
-				}
-			} else if valueField.Kind() == timeTypeKind {
-
-				timeFormat := tags.Get("format")
-				if len(timeFormat) == 0 {
-					timeFormat = defaultTimeFormat
-				}
-				rawValue := c.GetQueryString(sourceName)
-				if len(rawValue) == 0 {
-					continue
-				}
-				timeValue, err := time.Parse(timeFormat, rawValue)
-				if err != nil {
-					return err
-				}
-				valueField.Set(reflect.ValueOf(&timeValue))
-				fmt.Println("time")
-			} else {
-				// not iteration
-				rawValue := c.GetQueryString(sourceName)
-				err = setValue(valueField, rawValue)
-				if err != nil {
-					return err
-				}
+			err = BindingValue(valueField, c.GetQueryStrings(sourceName), tags)
+			if err != nil {
+				return err
 			}
-
 		case "path":
 			if valueField.Kind() == reflect.Slice || valueField.Kind() == reflect.Array {
 
@@ -170,6 +180,40 @@ func bindingWalk(c *Context, v reflect.Value) error {
 		case "param":
 			rawData := c.Param[sourceName]
 			valueField.Set(reflect.ValueOf(rawData))
+		case "form":
+			if formFileValue, ok := valueField.Interface().(FormFile); ok {
+				formFileValue = FormFile{}
+				formFileValue.File, formFileValue.Header, err = c.Request.FormFile(sourceName)
+				if err != nil {
+					return err
+				}
+
+			} else if formFilesValue, ok := valueField.Interface().([]FormFile); ok {
+				formFilesValue = []FormFile{}
+				headers := c.Request.MultipartForm.File[sourceName]
+				if headers == nil {
+					continue
+				}
+				for _, header := range headers {
+					formFile, err := header.Open()
+					if err != nil {
+						return err
+					}
+					formFilesValue = append(formFilesValue, FormFile{
+						Header: header,
+						File:   formFile,
+					})
+				}
+			} else {
+				rawValue := c.Request.Form[sourceName]
+				if len(rawValue) == 0 {
+					continue
+				}
+				err = BindingValue(valueField, rawValue, tags)
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil

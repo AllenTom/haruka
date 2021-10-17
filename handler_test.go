@@ -129,15 +129,26 @@ type Input struct {
 			NumberInterfaceItemsArray []interface{} `hsource:"query" hname:"nitems"`
 		}
 	}
-	Param      string     `hsource:"param" hname:"name"`
-	ParamInt   int64      `hsource:"param" hname:"id"`
-	ParamSlice []string   `hsource:"param" hname:"slice"`
-	StartTime  *time.Time `hsource:"query" hname:"startTime" format:"2006-01-02"`
+	Param                 string     `hsource:"param" hname:"name"`
+	ParamInt              int64      `hsource:"param" hname:"id"`
+	ParamSlice            []string   `hsource:"param" hname:"slice"`
+	StartTime             *time.Time `hsource:"query" hname:"startTime" format:"2006-01-02"`
+	FormValue1            int        `hsource:"form" hname:"value1"`
+	FormValue2            string     `hsource:"form" hname:"value2"`
+	FormStringSliceValue2 []string   `hsource:"form" hname:"value3"`
+	FormIntSliceValue2    []int      `hsource:"form" hname:"value4"`
 }
 
 func TestConvert(t *testing.T) {
 	url, _ := url.Parse("http://localhost:8090/ping?id=1&id=20&name=aren&nitems=1&&nitems=2&&nitems=3&startTime=2021-01-01")
 	req := &http.Request{URL: url}
+	req.Form = map[string][]string{
+		"value1": {"1"},
+		"value2": {"textValue"},
+		"value3": {"elm1", "elm2"},
+		"value4": {"999", "1000"},
+	}
+
 	ctx := &Context{
 		Request: req,
 		Param: map[string]interface{}{
