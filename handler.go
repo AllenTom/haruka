@@ -104,6 +104,9 @@ func setValue(value reflect.Value, rawValue string) error {
 	return nil
 }
 func BindingValue(valueField reflect.Value, rawValue []string, tags reflect.StructTag) error {
+	if rawValue == nil {
+		return nil
+	}
 	var err error
 	if valueField.Kind() == reflect.Slice || valueField.Kind() == reflect.Array {
 		if valueField.Kind() == reflect.Array && valueField.Cap() < len(rawValue) {
