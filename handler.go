@@ -20,13 +20,20 @@ func init() {
 	timeTypeKind = reflect.TypeOf(&timeType).Kind()
 }
 
+// Context for request
 type Context struct {
-	Writer      http.ResponseWriter
-	Request     *http.Request
-	Parameters  map[string]string
-	Param       map[string]interface{}
-	isAbort     bool
-	isInterrupt bool
+	// Pattern matched url path
+	Pattern string
+	// The http.ResponseWriter object.
+	Writer http.ResponseWriter
+	// The http.Request object.
+	Request *http.Request
+	// Path params
+	Parameters map[string]string
+	// For middleware to store dara
+	Param map[string]interface{}
+	// Abort flag the request.
+	isAbort bool
 }
 type RequestHandler func(context *Context)
 
@@ -68,11 +75,6 @@ func (c *Context) GetPathParameterAsInt(key string) (int, error) {
 // interrupt middleware chain
 func (c *Context) Abort() {
 	c.isAbort = true
-}
-
-// interrupt middleware chain
-func (c *Context) Interrupt() {
-	c.isInterrupt = true
 }
 
 type FormFile struct {

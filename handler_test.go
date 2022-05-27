@@ -79,6 +79,21 @@ func TestContext_GetPathParameterAsInt(t *testing.T) {
 	}()
 	testRequest(t, "http://localhost:8090/ping/123", "<test><say>Hello</say></test>")
 }
+func TestContext_GetUrlMatchPattern(t *testing.T) {
+	e := NewEngine()
+	e.Router.AddHandler("/ping/{key}", func(context *Context) {
+		assert.Equal(t, "/ping/{key}", context.Pattern)
+		err := context.XML(XMLBody{Say: context.Pattern})
+		if err != nil {
+			t.Error(e)
+		}
+
+	})
+	go func() {
+		e.RunAndListen(":8090")
+	}()
+	testRequest(t, "http://localhost:8090/ping/123", "<test><say>/ping/{key}</say></test>")
+}
 
 func TestContext_GetQueryStrings(t *testing.T) {
 	e := NewEngine()
