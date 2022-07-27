@@ -114,6 +114,31 @@ func TestContext_GetQueryStrings(t *testing.T) {
 	}()
 	testRequest(t, "http://localhost:8090/ping?key=123&key=1234&key2=123", "<test><say>Hello</say></test>")
 }
+func TestContext_Custom(t *testing.T) {
+	e := NewEngine()
+	handlerFunc := func(context *Context) {
+		err := context.XML(XMLBody{Say: "Hello"})
+		key := context.GetQueryStrings("key")
+		key2 := context.GetQueryStrings("key2")
+		key3 := context.GetQueryStrings("key3")
+		assert.Equal(t, []string{"123", "1234"}, key)
+		assert.Equal(t, []string{"123"}, key2)
+		assert.Nil(t, key3)
+		if err != nil {
+			t.Error(e)
+		}
+	}
+	e.Router.HandlerRouter.PathPrefix("/ping").HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		ctx := e.Router.MakeHandlerContext(writer, request, "/ping")
+		if ctx != nil {
+			handlerFunc(ctx)
+		}
+	})
+	go func() {
+		e.RunAndListen(":8090")
+	}()
+	testRequest(t, "http://localhost:8090/ping/123/123/123?key=123&key=1234&key2=123", "<test><say>Hello</say></test>")
+}
 
 type Input struct {
 	UintId                    uint          `hsource:"query" hname:"id"`
