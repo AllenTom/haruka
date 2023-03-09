@@ -2,7 +2,6 @@ package haruka
 
 import (
 	"errors"
-	"fmt"
 	"mime/multipart"
 	"net/http"
 	"reflect"
@@ -100,6 +99,26 @@ func setValue(value reflect.Value, rawValue string) error {
 		value.SetString(rawValue)
 	case reflect.Interface:
 		value.Set(reflect.ValueOf(rawValue))
+	case reflect.Float32, reflect.Float64:
+		v, err := strconv.ParseFloat(rawValue, 64)
+		if err != nil {
+			return err
+		}
+		value.SetFloat(v)
+	case reflect.Bool:
+		v, err := strconv.ParseBool(rawValue)
+		if err != nil {
+			return err
+		}
+		value.SetBool(v)
+	case timeTypeKind:
+		timeFormat := defaultTimeFormat
+		v, err := time.Parse(timeFormat, rawValue)
+		if err != nil {
+			return err
+		}
+		value.Set(reflect.ValueOf(v))
+
 	default:
 		return errors.New("unknown type")
 	}
@@ -137,7 +156,6 @@ func BindingValue(valueField reflect.Value, rawValue []string, tags reflect.Stru
 			return err
 		}
 		valueField.Set(reflect.ValueOf(&timeValue))
-		fmt.Println("time")
 	} else {
 		// not iteration
 		err = setValue(valueField, rawValue[0])

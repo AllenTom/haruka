@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
-	"log"
 	"net/http"
 )
 
@@ -30,7 +29,7 @@ func (e *Engine) UseMiddleware(middleware Middleware) {
 func (e *Engine) UseCors(cors *cors.Cors) {
 	e.Cros = cors
 }
-func (e *Engine) RunAndListen(addr string) {
+func (e *Engine) RunAndListen(addr string) error {
 	e.Router.Middleware = e.Middlewares
 	e.Logger.Info(fmt.Sprintf("application run in %s", addr))
 	var router http.Handler
@@ -38,5 +37,13 @@ func (e *Engine) RunAndListen(addr string) {
 	if e.Cros != nil {
 		router = e.Cros.Handler(e.Router.HandlerRouter)
 	}
-	log.Fatal(http.ListenAndServe(addr, router))
+	httpserver := &http.Server{
+		Addr:    addr,
+		Handler: router,
+	}
+	e.server = httpserver
+	return httpserver.ListenAndServe()
+}
+func (e *Engine) Stop() error {
+	return e.server.Close()
 }
