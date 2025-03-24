@@ -3,10 +3,11 @@ package haruka
 import (
 	"crypto/tls"
 	"encoding/xml"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func testRequest(t *testing.T, url string, expected string) {
@@ -235,4 +236,36 @@ func TestRouter_DELETE(t *testing.T) {
 	// other methods 405 response
 	_, postResponse := testMakePOSTRequest(t, "http://localhost:8090/ping")
 	assert.Equal(t, postResponse.StatusCode, http.StatusMethodNotAllowed)
+}
+
+func TestRouter_Prefix(t *testing.T) {
+	e := NewEngine()
+	e.Router.Prefix("/api", func(context *Context) {
+		data := map[string]interface{}{
+			"path": context.Request.URL.Path,
+		}
+		err := context.JSON(data)
+		if err != nil {
+			t.Error(err)
+		}
+	})
+	go func() {
+		e.RunAndListen(":8090")
+	}()
+
+	// Test exact prefix match
+	body, _ := testMakeGETRequest(t, "http://localhost:8090/api")
+	assert.Equal(t, "{\"path\":\"/api\"}", string(body))
+
+	// Test subpath match
+	body, _ = testMakeGETRequest(t, "http://localhost:8090/api/users")
+	assert.Equal(t, "{\"path\":\"/api/users\"}", string(body))
+
+	// Test deeper subpath match
+	body, _ = testMakeGETRequest(t, "http://localhost:8090/api/users/123/profile")
+	assert.Equal(t, "{\"path\":\"/api/users/123/profile\"}", string(body))
+
+	// Test non-matching path should return 404
+	_, resp := testMakeGETRequest(t, "http://localhost:8090/not-api")
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }

@@ -1,8 +1,9 @@
 package haruka
 
 import (
-	"github.com/gorilla/mux"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 type RouterMapping struct {
@@ -103,6 +104,16 @@ func (r *Router) METHODS(pattern string, methods []string, handler RequestHandle
 		}
 		handler(ctx)
 	}).Methods(methods...)
+}
+
+func (r *Router) Prefix(pattern string, handler RequestHandler) {
+	r.HandlerRouter.PathPrefix(pattern).HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		ctx := r.MakeHandlerContext(writer, request, pattern)
+		if ctx == nil {
+			return
+		}
+		handler(ctx)
+	})
 }
 
 func createContext(writer http.ResponseWriter, request *http.Request) *Context {
