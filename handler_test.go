@@ -2,11 +2,13 @@ package haruka
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestReadPathParameter(t *testing.T) {
@@ -20,10 +22,10 @@ func TestReadPathParameter(t *testing.T) {
 			t.Error(e)
 		}
 	})
-	go func() {
-		e.RunAndListen(":8090")
-	}()
-	testRequest(t, "http://localhost:8090/ping/123asd/123/key4/asd?key=233", "<test><say>Hello</say></test>")
+	server := newTestServer(t, e)
+	resp, body := doGet(t, server.URL+"/ping/123asd/123/key4/asd?key=233")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "<test><say>Hello</say></test>", body)
 }
 
 func TestContext_GetQueryInt(t *testing.T) {
@@ -54,11 +56,10 @@ func TestContext_GetPathParameterAsString(t *testing.T) {
 			t.Error(e)
 		}
 	})
-	go func() {
-		e.RunAndListen(":8090")
-	}()
-	<-time.After(3 * time.Second)
-	testRequest(t, "http://localhost:8090/ping/123asd", "<test><say>Hello</say></test>")
+	server := newTestServer(t, e)
+	resp, body := doGet(t, server.URL+"/ping/123asd")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "<test><say>Hello</say></test>", body)
 }
 
 func TestContext_GetPathParameterAsInt(t *testing.T) {
@@ -74,10 +75,10 @@ func TestContext_GetPathParameterAsInt(t *testing.T) {
 			t.Error(e)
 		}
 	})
-	go func() {
-		e.RunAndListen(":8090")
-	}()
-	testRequest(t, "http://localhost:8090/ping/123", "<test><say>Hello</say></test>")
+	server := newTestServer(t, e)
+	resp, body := doGet(t, server.URL+"/ping/123")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "<test><say>Hello</say></test>", body)
 }
 func TestContext_GetUrlMatchPattern(t *testing.T) {
 	e := NewEngine()
@@ -89,10 +90,10 @@ func TestContext_GetUrlMatchPattern(t *testing.T) {
 		}
 
 	})
-	go func() {
-		e.RunAndListen(":8090")
-	}()
-	testRequest(t, "http://localhost:8090/ping/123", "<test><say>/ping/{key}</say></test>")
+	server := newTestServer(t, e)
+	resp, body := doGet(t, server.URL+"/ping/123")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "<test><say>/ping/{key}</say></test>", body)
 }
 
 func TestContext_GetQueryStrings(t *testing.T) {
@@ -109,10 +110,10 @@ func TestContext_GetQueryStrings(t *testing.T) {
 			t.Error(e)
 		}
 	})
-	go func() {
-		e.RunAndListen(":8090")
-	}()
-	testRequest(t, "http://localhost:8090/ping?key=123&key=1234&key2=123", "<test><say>Hello</say></test>")
+	server := newTestServer(t, e)
+	resp, body := doGet(t, server.URL+"/ping?key=123&key=1234&key2=123")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "<test><say>Hello</say></test>", body)
 }
 func TestContext_Custom(t *testing.T) {
 	e := NewEngine()
@@ -134,10 +135,11 @@ func TestContext_Custom(t *testing.T) {
 			handlerFunc(ctx)
 		}
 	})
-	go func() {
-		e.RunAndListen(":8090")
-	}()
-	testRequest(t, "http://localhost:8090/ping/123/123/123?key=123&key=1234&key2=123", "<test><say>Hello</say></test>")
+	server := httptest.NewServer(e.HTTPHandler())
+	defer server.Close()
+	resp, body := doGet(t, server.URL+"/ping/123/123/123?key=123&key=1234&key2=123")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "<test><say>Hello</say></test>", body)
 }
 
 type Input struct {

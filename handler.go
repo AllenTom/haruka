@@ -32,9 +32,74 @@ type Context struct {
 	// For middleware to store dara
 	Param map[string]interface{}
 	// Abort flag the request.
-	isAbort bool
+	isAbort   bool
+	recorder  *responseRecorder
+	startTime time.Time
 }
 type RequestHandler func(context *Context)
+
+// StartTime returns the moment the request entered the framework.
+func (c *Context) StartTime() time.Time {
+	return c.startTime
+}
+
+// StatusCode returns the HTTP status code written to the response,
+// or 0 when nothing has been written yet.
+func (c *Context) StatusCode() int {
+	if c.recorder == nil {
+		return 0
+	}
+	return c.recorder.Status()
+}
+
+// RawWriter exposes the original http.ResponseWriter before any
+// framework wrapping. Needed when integration code must satisfy
+// unexported interfaces of net/http (e.g. MaxBytesReader's 413 hook).
+func (c *Context) RawWriter() http.ResponseWriter {
+	if c.recorder == nil {
+		return c.Writer
+	}
+	return c.recorder.ResponseWriter
+}
+
+// ClientIP resolves the client address honouring common proxy headers.
+func (c *Context) ClientIP() string {
+	if v := c.Request.Header.Get("X-Forwarded-For"); v != "" {
+		if idx := indexByteString(v, ','); idx >= 0 {
+			v = v[:idx]
+		}
+		return trimSpaceString(v)
+	}
+	if v := c.Request.Header.Get("X-Real-IP"); v != "" {
+		return v
+	}
+	host := c.Request.RemoteAddr
+	if idx := indexByteString(host, ':'); idx >= 0 {
+		host = host[:idx]
+	}
+	return host
+}
+
+func indexByteString(s string, b byte) int {
+	for i := 0; i < len(s); i++ {
+		if s[i] == b {
+			return i
+		}
+	}
+	return -1
+}
+
+func trimSpaceString(s string) string {
+	start := 0
+	for start < len(s) && (s[start] == ' ' || s[start] == '\t') {
+		start++
+	}
+	end := len(s)
+	for end > start && (s[end-1] == ' ' || s[end-1] == '\t') {
+		end--
+	}
+	return s[start:end]
+}
 
 // get query string from url
 func (c *Context) GetQueryString(key string) string {
@@ -74,6 +139,19 @@ func (c *Context) GetPathParameterAsInt(key string) (int, error) {
 // interrupt middleware chain
 func (c *Context) Abort() {
 	c.isAbort = true
+}
+
+// AbortWithStatus writes the status code and aborts the chain.
+func (c *Context) AbortWithStatus(status int) {
+	c.recorder.WriteHeader(status)
+	c.Abort()
+}
+
+// AbortWithStatusJSON writes data as JSON with the given status and
+// aborts the chain.
+func (c *Context) AbortWithStatusJSON(status int, data interface{}) {
+	_ = c.JSONWithStatus(data, status)
+	c.Abort()
 }
 
 type FormFile struct {

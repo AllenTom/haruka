@@ -1,19 +1,20 @@
 package middleware
 
 import (
-	"github.com/allentom/haruka"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"strings"
 	"testing"
+
+	jwt "github.com/golang-jwt/jwt/v5"
+	"github.com/allentom/haruka"
+	"github.com/stretchr/testify/assert"
 )
 
 var superkey = "superkey"
 
 func createTestToken() (string, error) {
-	claims := &jwt.StandardClaims{
-		Id: "testuser1",
+	claims := &jwt.RegisteredClaims{
+		ID: "testuser1",
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	ss, err := token.SignedString([]byte(superkey))
@@ -45,6 +46,6 @@ func TestJWTMiddleware_OnRequest(t *testing.T) {
 	}
 	mid.OnRequest(context)
 
-	parseClaims := context.Param["claims"].(*jwt.StandardClaims)
-	assert.Equal(t, "testuser1", parseClaims.Id)
+	parseClaims := context.Param["claims"].(*jwt.RegisteredClaims)
+	assert.Equal(t, "testuser1", parseClaims.ID)
 }

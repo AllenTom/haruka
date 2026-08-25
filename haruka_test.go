@@ -1,114 +1,81 @@
 package haruka
 
 import (
-	"crypto/tls"
 	"encoding/xml"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func testRequest(t *testing.T, url string, expected string) {
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-	}
-	client := &http.Client{Transport: tr}
+// newTestServer serves the engine over an httptest server and closes
+// it automatically when the test ends.
+func newTestServer(t *testing.T, e *Engine) *httptest.Server {
+	t.Helper()
+	server := httptest.NewServer(e.HTTPHandler())
+	t.Cleanup(server.Close)
+	return server
+}
 
-	resp, err := client.Get(url)
+func readBody(t *testing.T, resp *http.Response) string {
+	t.Helper()
+	body, err := io.ReadAll(resp.Body)
+	assert.NoError(t, err)
+	return string(body)
+}
+
+func doGet(t *testing.T, url string) (*http.Response, string) {
+	t.Helper()
+	resp, err := http.Get(url)
 	assert.NoError(t, err)
 	defer resp.Body.Close()
-
-	body, ioerr := ioutil.ReadAll(resp.Body)
-	assert.NoError(t, ioerr)
-	assert.Equal(t, expected, string(body), "resp body should match")
-	assert.Equal(t, "200 OK", resp.Status, "should get a 200")
+	return resp, readBody(t, resp)
 }
-func testMakePOSTRequest(t *testing.T, url string) ([]byte, *http.Response) {
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-	}
-	client := &http.Client{Transport: tr}
 
-	resp, err := client.Post(url, "application/json", nil)
+func doPost(t *testing.T, url string) (*http.Response, string) {
+	t.Helper()
+	resp, err := http.Post(url, "application/json", nil)
 	assert.NoError(t, err)
 	defer resp.Body.Close()
-
-	body, ioerr := ioutil.ReadAll(resp.Body)
-	assert.NoError(t, ioerr)
-	return body, resp
+	return resp, readBody(t, resp)
 }
-func testMakeGETRequest(t *testing.T, url string) ([]byte, *http.Response) {
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-	}
-	client := &http.Client{Transport: tr}
 
-	resp, err := client.Get(url)
+func doPut(t *testing.T, url string) (*http.Response, string) {
+	return doMethod(t, http.MethodPut, url)
+}
+
+func doPatch(t *testing.T, url string) (*http.Response, string) {
+	return doMethod(t, http.MethodPatch, url)
+}
+
+func doDelete(t *testing.T, url string) (*http.Response, string) {
+	return doMethod(t, http.MethodDelete, url)
+}
+
+func doMethod(t *testing.T, method string, url string) (*http.Response, string) {
+	t.Helper()
+	request, err := http.NewRequest(method, url, nil)
+	assert.NoError(t, err)
+	resp, err := http.DefaultClient.Do(request)
 	assert.NoError(t, err)
 	defer resp.Body.Close()
-
-	body, ioerr := ioutil.ReadAll(resp.Body)
-	assert.NoError(t, ioerr)
-	return body, resp
-}
-func testMakePUTRequest(t *testing.T, url string) ([]byte, *http.Response) {
-	client := &http.Client{}
-	request, err := http.NewRequest("PUT", url, nil)
-	if err != nil {
-		t.Error(err)
-	}
-	response, err := client.Do(request)
-	body, ioerr := ioutil.ReadAll(response.Body)
-	assert.NoError(t, ioerr)
-	return body, response
+	return resp, readBody(t, resp)
 }
 
-func testMakePATCHRequest(t *testing.T, url string) ([]byte, *http.Response) {
-	client := &http.Client{}
-	request, err := http.NewRequest("PATCH", url, nil)
-	if err != nil {
-		t.Error(err)
-	}
-	response, err := client.Do(request)
-	body, ioerr := ioutil.ReadAll(response.Body)
-	assert.NoError(t, ioerr)
-	return body, response
-}
-
-func testMakeDELETERequest(t *testing.T, url string) ([]byte, *http.Response) {
-	client := &http.Client{}
-	request, err := http.NewRequest("DELETE", url, nil)
-	if err != nil {
-		t.Error(err)
-	}
-	response, err := client.Do(request)
-	body, ioerr := ioutil.ReadAll(response.Body)
-	assert.NoError(t, ioerr)
-	return body, response
-}
 func TestRunAndListen(t *testing.T) {
 	e := NewEngine()
 	e.Router.AddHandler("/ping", func(context *Context) {
-		data := map[string]interface{}{
-			"say": "pong",
-		}
-		err := context.JSON(data)
+		err := context.JSON(JSON{"say": "pong"})
 		if err != nil {
-			t.Error(e)
+			t.Error(err)
 		}
 	})
-	go func() {
-		e.RunAndListen(":8090")
-	}()
-	testRequest(t, "http://localhost:8090/ping", "{\"say\":\"pong\"}")
+	server := newTestServer(t, e)
+	resp, body := doGet(t, server.URL+"/ping")
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "{\"say\":\"pong\"}", body)
 }
 
 type XMLBody struct {
@@ -121,121 +88,95 @@ func TestXML(t *testing.T) {
 	e.Router.AddHandler("/ping", func(context *Context) {
 		err := context.XML(XMLBody{Say: "Hello"})
 		if err != nil {
-			t.Error(e)
+			t.Error(err)
 		}
 	})
-	go func() {
-		e.RunAndListen(":8090")
-	}()
-	testRequest(t, "http://localhost:8090/ping", "<test><say>Hello</say></test>")
+	server := newTestServer(t, e)
+	resp, body := doGet(t, server.URL+"/ping")
+	assert.Equal(t, "200 OK", resp.Status)
+	assert.Equal(t, "<test><say>Hello</say></test>", body)
 }
 
 func TestRouter_GET(t *testing.T) {
 	e := NewEngine()
 	e.Router.GET("/ping", func(context *Context) {
-		data := map[string]interface{}{
-			"say": "pong",
-		}
-		err := context.JSON(data)
+		err := context.JSON(JSON{"say": "pong"})
 		if err != nil {
-			t.Error(e)
+			t.Error(err)
 		}
 	})
-	go func() {
-		e.RunAndListen(":8090")
-	}()
-	_, resp := testMakePOSTRequest(t, "http://localhost:8090/ping")
-	testRequest(t, "http://localhost:8090/ping", "{\"say\":\"pong\"}")
-	// other methods 405 response
-	assert.Equal(t, resp.StatusCode, http.StatusMethodNotAllowed)
+	server := newTestServer(t, e)
+	resp, _ := doPost(t, server.URL+"/ping")
+	assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
+
+	getResp, getBody := doGet(t, server.URL+"/ping")
+	assert.Equal(t, "{\"say\":\"pong\"}", getBody)
+	assert.Equal(t, http.StatusOK, getResp.StatusCode)
 }
 
 func TestRouter_POST(t *testing.T) {
 	e := NewEngine()
 	e.Router.POST("/ping", func(context *Context) {
-		data := map[string]interface{}{
-			"say": "pong",
-		}
-		err := context.JSON(data)
+		err := context.JSON(JSON{"say": "pong"})
 		if err != nil {
-			t.Error(e)
+			t.Error(err)
 		}
 	})
-	go func() {
-		e.RunAndListen(":8090")
-	}()
-
-	body, _ := testMakePOSTRequest(t, "http://localhost:8090/ping")
-	assert.Equal(t, "{\"say\":\"pong\"}", string(body))
+	server := newTestServer(t, e)
+	resp, body := doPost(t, server.URL+"/ping")
+	assert.Equal(t, "{\"say\":\"pong\"}", body)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	// other methods 405 response
-	_, postResponse := testMakeGETRequest(t, "http://localhost:8090/ping")
-	assert.Equal(t, postResponse.StatusCode, http.StatusMethodNotAllowed)
+	methodResp, _ := doPatch(t, server.URL+"/ping")
+	assert.Equal(t, http.StatusMethodNotAllowed, methodResp.StatusCode)
 }
 
 func TestRouter_PUT(t *testing.T) {
 	e := NewEngine()
 	e.Router.PUT("/ping", func(context *Context) {
-		data := map[string]interface{}{
-			"say": "pong",
-		}
-		err := context.JSON(data)
+		err := context.JSON(JSON{"say": "pong"})
 		if err != nil {
-			t.Error(e)
+			t.Error(err)
 		}
 	})
-	go func() {
-		e.RunAndListen(":8090")
-	}()
-
-	body, _ := testMakePUTRequest(t, "http://localhost:8090/ping")
-	assert.Equal(t, "{\"say\":\"pong\"}", string(body))
+	server := newTestServer(t, e)
+	_, body := doPut(t, server.URL+"/ping")
+	assert.Equal(t, "{\"say\":\"pong\"}", body)
 	// other methods 405 response
-	_, postResponse := testMakePOSTRequest(t, "http://localhost:8090/ping")
-	assert.Equal(t, postResponse.StatusCode, http.StatusMethodNotAllowed)
+	postResp, _ := doPost(t, server.URL+"/ping")
+	assert.Equal(t, http.StatusMethodNotAllowed, postResp.StatusCode)
 }
 
 func TestRouter_PATCH(t *testing.T) {
 	e := NewEngine()
 	e.Router.PATCH("/ping", func(context *Context) {
-		data := map[string]interface{}{
-			"say": "pong",
-		}
-		err := context.JSON(data)
+		err := context.JSON(JSON{"say": "pong"})
 		if err != nil {
-			t.Error(e)
+			t.Error(err)
 		}
 	})
-	go func() {
-		e.RunAndListen(":8090")
-	}()
-
-	body, _ := testMakePATCHRequest(t, "http://localhost:8090/ping")
-	assert.Equal(t, "{\"say\":\"pong\"}", string(body))
+	server := newTestServer(t, e)
+	_, body := doPatch(t, server.URL+"/ping")
+	assert.Equal(t, "{\"say\":\"pong\"}", body)
 	// other methods 405 response
-	_, postResponse := testMakePOSTRequest(t, "http://localhost:8090/ping")
-	assert.Equal(t, postResponse.StatusCode, http.StatusMethodNotAllowed)
+	postResp, _ := doPost(t, server.URL+"/ping")
+	assert.Equal(t, http.StatusMethodNotAllowed, postResp.StatusCode)
 }
 
 func TestRouter_DELETE(t *testing.T) {
 	e := NewEngine()
 	e.Router.DELETE("/ping", func(context *Context) {
-		data := map[string]interface{}{
-			"say": "pong",
-		}
-		err := context.JSON(data)
+		err := context.JSON(JSON{"say": "pong"})
 		if err != nil {
-			t.Error(e)
+			t.Error(err)
 		}
 	})
-	go func() {
-		e.RunAndListen(":8090")
-	}()
-
-	body, _ := testMakeDELETERequest(t, "http://localhost:8090/ping")
-	assert.Equal(t, "{\"say\":\"pong\"}", string(body))
+	server := newTestServer(t, e)
+	_, body := doDelete(t, server.URL+"/ping")
+	assert.Equal(t, "{\"say\":\"pong\"}", body)
 	// other methods 405 response
-	_, postResponse := testMakePOSTRequest(t, "http://localhost:8090/ping")
-	assert.Equal(t, postResponse.StatusCode, http.StatusMethodNotAllowed)
+	postResp, _ := doPost(t, server.URL+"/ping")
+	assert.Equal(t, http.StatusMethodNotAllowed, postResp.StatusCode)
 }
 
 func TestRouter_Prefix(t *testing.T) {
@@ -249,23 +190,21 @@ func TestRouter_Prefix(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	go func() {
-		e.RunAndListen(":8090")
-	}()
+	server := newTestServer(t, e)
 
 	// Test exact prefix match
-	body, _ := testMakeGETRequest(t, "http://localhost:8090/api")
-	assert.Equal(t, "{\"path\":\"/api\"}", string(body))
+	_, body := doGet(t, server.URL+"/api")
+	assert.Equal(t, "{\"path\":\"/api\"}", body)
 
 	// Test subpath match
-	body, _ = testMakeGETRequest(t, "http://localhost:8090/api/users")
-	assert.Equal(t, "{\"path\":\"/api/users\"}", string(body))
+	_, body = doGet(t, server.URL+"/api/users")
+	assert.Equal(t, "{\"path\":\"/api/users\"}", body)
 
 	// Test deeper subpath match
-	body, _ = testMakeGETRequest(t, "http://localhost:8090/api/users/123/profile")
-	assert.Equal(t, "{\"path\":\"/api/users/123/profile\"}", string(body))
+	_, body = doGet(t, server.URL+"/api/users/123/profile")
+	assert.Equal(t, "{\"path\":\"/api/users/123/profile\"}", body)
 
 	// Test non-matching path should return 404
-	_, resp := testMakeGETRequest(t, "http://localhost:8090/not-api")
+	resp, _ := doGet(t, server.URL+"/not-api")
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
