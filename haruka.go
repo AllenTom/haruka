@@ -10,6 +10,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	defaultReadHeaderTimeout = 15 * time.Second
+	defaultIdleTimeout       = 60 * time.Second
+)
+
 type Engine struct {
 	Router      *Router
 	Middlewares []Middleware
@@ -19,6 +24,12 @@ type Engine struct {
 	// ReadHeaderTimeout guards against slowloris attacks.
 	// Zero means the default of 15 seconds.
 	ReadHeaderTimeout time.Duration
+	// IdleTimeout is the maximum time to wait for the next request on an
+	// keep-alive connection. Zero means the default of 60 seconds.
+	IdleTimeout time.Duration
+	// WriteTimeout limits response writes. Zero keeps net/http's disabled
+	// default, preserving streaming and WebSocket handlers.
+	WriteTimeout time.Duration
 	// ShutdownTimeout is the maximum time to wait for in-flight
 	// requests during graceful shutdown. Zero means 10 seconds.
 	ShutdownTimeout time.Duration
@@ -55,12 +66,18 @@ func (e *Engine) HTTPHandler() http.Handler {
 func (e *Engine) buildServer(addr string, handler http.Handler) *http.Server {
 	readHeaderTimeout := e.ReadHeaderTimeout
 	if readHeaderTimeout == 0 {
-		readHeaderTimeout = 15 * time.Second
+		readHeaderTimeout = defaultReadHeaderTimeout
+	}
+	idleTimeout := e.IdleTimeout
+	if idleTimeout == 0 {
+		idleTimeout = defaultIdleTimeout
 	}
 	return &http.Server{
 		Addr:              addr,
 		Handler:           handler,
 		ReadHeaderTimeout: readHeaderTimeout,
+		IdleTimeout:       idleTimeout,
+		WriteTimeout:      e.WriteTimeout,
 	}
 }
 

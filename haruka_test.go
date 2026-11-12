@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -62,6 +63,30 @@ func doMethod(t *testing.T, method string, url string) (*http.Response, string) 
 	assert.NoError(t, err)
 	defer resp.Body.Close()
 	return resp, readBody(t, resp)
+}
+
+func TestBuildServerTimeouts(t *testing.T) {
+	handler := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
+	e := NewEngine()
+	e.ReadHeaderTimeout = 3 * time.Second
+	e.IdleTimeout = 4 * time.Second
+	e.WriteTimeout = 5 * time.Second
+
+	server := e.buildServer(":8080", handler)
+
+	assert.Equal(t, ":8080", server.Addr)
+	assert.NotNil(t, server.Handler)
+	assert.Equal(t, 3*time.Second, server.ReadHeaderTimeout)
+	assert.Equal(t, 4*time.Second, server.IdleTimeout)
+	assert.Equal(t, 5*time.Second, server.WriteTimeout)
+}
+
+func TestBuildServerTimeoutDefaults(t *testing.T) {
+	server := NewEngine().buildServer(":8080", http.NotFoundHandler())
+
+	assert.Equal(t, 15*time.Second, server.ReadHeaderTimeout)
+	assert.Equal(t, 60*time.Second, server.IdleTimeout)
+	assert.Zero(t, server.WriteTimeout)
 }
 
 func TestRunAndListen(t *testing.T) {
