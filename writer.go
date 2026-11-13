@@ -63,3 +63,11 @@ func (r *responseRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	}
 	return h.Hijack()
 }
+
+// Unwrap exposes the wrapped ResponseWriter so http.ResponseController can
+// reach connection-level capabilities (SetWriteDeadline, ...) through this
+// recorder. Without it every writer wrapper in the chain hides the net.Conn,
+// and callers cannot impose a write deadline on a stalled stream.
+func (r *responseRecorder) Unwrap() http.ResponseWriter {
+	return r.ResponseWriter
+}
